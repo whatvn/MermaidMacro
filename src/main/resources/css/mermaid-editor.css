@@ -1,0 +1,76 @@
+/* ===================================================================
+   mermaid-editor.css  —  Macro editor dialog live-preview styles
+   =================================================================== */
+
+/* ---- Preview panel wrapper --------------------------------------- */
+.mermaid-editor-preview-panel {
+    margin-top: 12px;
+    border: 1px solid #dfe1e6;
+    border-radius: 3px;
+    background: #fafbfc;
+    overflow: hidden;
+}
+
+/* ---- Header bar -------------------------------------------------- */
+.mermaid-editor-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: #f4f5f7;
+    border-bottom: 1px solid #dfe1e6;
+    font-size: 12px;
+}
+
+/* ---- Status badge ------------------------------------------------ */
+.mermaid-editor-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: transparent;
+}
+
+.mermaid-editor-status.ok {
+    color: #006644;
+    background: #e3fcef;
+}
+
+.mermaid-editor-status.error {
+    color: #bf2600;
+    background: #ffebe6;
+}
+
+/* ---- Output area ------------------------------------------------- */
+.mermaid-editor-preview-output {
+    padding: 12px;
+    min-height: 80px;
+    overflow: auto;
+    max-height: 400px;
+    text-align: center;
+}
+
+.mermaid-editor-preview-output svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ---- Placeholder hint ------------------------------------------- */
+.mermaid-editor-hint {
+    color: #97a0af;
+    font-size: 13px;
+}
+
+/* ---- Error pre block -------------------------------------------- */
+.mermaid-editor-error {
+    font-size: 12px;
+    color: #bf2600;
+    background: #ffebe6;
+    border: 1px solid #ffbdad;
+    border-radius: 3px;
+    padding: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-align: left;
+    margin: 0;
+}

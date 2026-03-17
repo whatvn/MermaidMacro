@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  IMPORTANT: This file is processed by Maven resource filtering.
+  ${atlassian.plugin.key}, ${project.version} etc. are substituted
+  at build time by maven-resources-plugin.
+-->
+<atlassian-plugin key="${atlassian.plugin.key}"
+                  name="Mermaid Diagrams for Confluence"
+                  plugins-version="2">
+
+    <plugin-info>
+        <description>Renders Mermaid diagrams in Confluence pages</description>
+        <version>${project.version}</version>
+        <vendor name="ZaloPay" url="https://zalopay.vn"/>
+        <param name="plugin-icon">images/mermaid-icon.png</param>
+        <param name="plugin-logo">images/mermaid-logo.png</param>
+        <param name="atlassian-data-center-compatible">true</param>
+    </plugin-info>
+
+    <!-- ============================================================
+         Macro definition
+         ============================================================ -->
+    <xhtml-macro
+            name="mermaid"
+            key="mermaid-macro"
+            class="com.zalopay.confluence.mermaid.MermaidMacro"
+            icon="/download/resources/${atlassian.plugin.key}/images/mermaid-icon.png"
+            documentation-url="https://mermaid.js.org/intro/">
+
+        <description>Render Mermaid diagrams (flowchart, sequence, ER, Gantt…) in Confluence pages.</description>
+        <category name="formatting"/>
+
+        <parameters>
+            <parameter name="theme" type="enum" default="default">
+                <value name="default"/>
+                <value name="dark"/>
+                <value name="neutral"/>
+                <value name="forest"/>
+            </parameter>
+            <parameter name="align" type="enum" default="center">
+                <value name="left"/>
+                <value name="center"/>
+                <value name="right"/>
+            </parameter>
+            <parameter name="height" type="string" default=""/>
+            <parameter name="allowDownload" type="boolean" default="false"/>
+        </parameters>
+
+        <body type="plain-text"/>
+    </xhtml-macro>
+
+    <!-- ============================================================
+         Web resources — served via Confluence's resource pipeline
+         ============================================================ -->
+
+    <!-- View-mode: loaded on every Confluence page -->
+    <web-resource key="mermaid-page-resources" name="Mermaid Page Resources">
+        <resource type="download" name="mermaid.min.js"    location="js/mermaid.min.js"/>
+        <resource type="download" name="mermaid-render.js" location="js/mermaid-render.js"/>
+        <resource type="download" name="mermaid-macro.css" location="css/mermaid-macro.css"/>
+        <context>atl.general</context>
+        <context>atl.admin</context>
+    </web-resource>
+
+    <!-- Editor: loaded inside the macro browser dialog -->
+    <web-resource key="mermaid-editor-resources" name="Mermaid Editor Resources">
+        <resource type="download" name="mermaid.min.js"    location="js/mermaid.min.js"/>
+        <resource type="download" name="mermaid-editor.js" location="js/mermaid-editor.js"/>
+        <resource type="download" name="mermaid-editor.css" location="css/mermaid-editor.css"/>
+        <dependency>confluence.editor.actions:editor-macro-browser</dependency>
+        <context>macro-browser</context>
+        <context>editor</context>
+    </web-resource>
+
+    <!--
+      Icon resource MUST be declared at the top-level plugin scope (not inside
+      a web-resource block) for the macro browser icon= path to resolve.
+      This is the pattern shown in the official Atlassian macro browser docs.
+    -->
+    <resource type="download" name="images/" location="images">
+        <param name="content-type" value="image/png"/>
+    </resource>
+
+</atlassian-plugin>

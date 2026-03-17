@@ -1,0 +1,57 @@
+## Velocity template for the Mermaid macro
+## Variables injected by MermaidMacro.java:
+##   $diagramId    — unique DOM id for this macro instance
+##   $source       — HTML-escaped Mermaid diagram source
+##   $theme        — mermaid theme name
+##   $align        — left | center | right
+##   $height       — optional fixed height in px (empty string = auto)
+##   $allowDownload — boolean
+
+#set($styleHeight = "")
+#if($height && $height != "")
+    #set($styleHeight = "height:${height}px;overflow:auto;")
+#end
+
+<div class="mermaid-macro-container"
+     data-diagram-id="${diagramId}"
+     style="text-align:${align};margin:12px 0;">
+
+    <div id="${diagramId}-loading"
+         class="mermaid-macro-loading"
+         style="color:#6b778c;font-style:italic;padding:8px 0;">
+        Rendering diagram&hellip;
+    </div>
+
+    <div id="${diagramId}-error"
+         class="aui-message aui-message-error"
+         style="display:none;text-align:left;">
+        <strong>Mermaid syntax error.</strong>
+        <pre id="${diagramId}-error-msg"
+             style="font-size:12px;white-space:pre-wrap;color:#de350b;margin:4px 0 0;"></pre>
+    </div>
+
+    ## Raw source stored as text content — never injected as HTML.
+    ## JS reads this element's textContent and passes it to mermaid.render().
+    <div id="${diagramId}-source"
+         class="mermaid-macro-source"
+         data-theme="${theme}"
+         data-allow-download="${allowDownload}"
+         style="display:none;"
+         aria-hidden="true">${source}</div>
+
+    ## mermaid.render() injects the interactive SVG into this element
+    <div id="${diagramId}-output"
+         class="mermaid-macro-output"
+         style="display:inline-block;max-width:100%;${styleHeight}"></div>
+
+    #if($allowDownload)
+        <div id="${diagramId}-toolbar" style="display:none;margin-top:6px;">
+            <button class="aui-button aui-button-subtle mermaid-download-btn"
+                    data-target="${diagramId}"
+                    title="Download SVG">
+                &#8681; Download SVG
+            </button>
+        </div>
+    #end
+
+</div>
