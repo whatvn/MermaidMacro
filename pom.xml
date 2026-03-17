@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.zalopay.confluence</groupId>
+    <artifactId>mermaid-diagrams-plugin</artifactId>
+    <version>1.0.5</version>
+    <packaging>atlassian-plugin</packaging>
+
+    <name>Mermaid Diagrams for Confluence</name>
+    <description>Renders Mermaid diagrams in Confluence Data Center pages</description>
+
+    <organization>
+        <name>ZaloPay</name>
+        <url>https://zalopay.vn</url>
+    </organization>
+
+    <properties>
+        <confluence.version>7.19.16</confluence.version>
+        <confluence.data.version>7.19.16</confluence.data.version>
+        <!-- AMPS 8.1.x is the last version fully compatible with Confluence 7.x -->
+        <amps.version>8.1.2</amps.version>
+        <atlassian.plugin.key>${project.groupId}.${project.artifactId}</atlassian.plugin.key>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Confluence 7.19 runs on JDK 11 -->
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.atlassian.confluence</groupId>
+            <artifactId>confluence</artifactId>
+            <version>${confluence.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.transaction</groupId>
+                    <artifactId>jta</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-httpclient</groupId>
+                    <artifactId>commons-httpclient</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jdk.tools</groupId>
+                    <artifactId>jdk.tools</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.transaction</groupId>
+            <artifactId>javax.transaction-api</artifactId>
+            <version>1.3</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>com.atlassian.maven.plugins</groupId>
+                <artifactId>confluence-maven-plugin</artifactId>
+                <version>${amps.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <productVersion>${confluence.version}</productVersion>
+                    <productDataVersion>${confluence.data.version}</productDataVersion>
+                    <skipManifestValidation>true</skipManifestValidation>
+                    <allowGoogleTracking>false</allowGoogleTracking>
+                    <instructions>
+                        <Bundle-SymbolicName>${atlassian.plugin.key}</Bundle-SymbolicName>
+                        <Bundle-Name>${project.name}</Bundle-Name>
+                        <Bundle-Version>${project.version}</Bundle-Version>
+
+                        <!--
+                          Confluence 7.x package versions differ from 8.x.
+                          Using version="0.0.0" means "any version" — safest for
+                          cross-version compatibility.
+                        -->
+                        <Import-Package>
+                            com.atlassian.confluence.macro;version="0.0.0",
+                            com.atlassian.confluence.macro.xhtml;version="0.0.0",
+                            com.atlassian.confluence.content.render.xhtml;version="0.0.0",
+                            com.atlassian.confluence.renderer.radeox.macros;version="0.0.0",
+                            com.atlassian.confluence.util.velocity;version="0.0.0",
+                            org.apache.commons.lang3;version="0.0.0",
+                            org.slf4j;version="0.0.0"
+                        </Import-Package>
+
+                        <Export-Package/>
+                        <Embed-Dependency/>
+                        <Embed-Transitive>false</Embed-Transitive>
+                    </instructions>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+
+            <!--
+              maven-resources-plugin: ensures ${...} placeholders in
+              atlassian-plugin.xml are substituted at build time.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+        </plugins>
+
+        <!--
+          Enable Maven resource filtering so ${atlassian.plugin.key},
+          ${project.version} etc. are replaced in atlassian-plugin.xml.
+        -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>atlassian-plugin.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>atlassian-plugin.xml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+    </build>
+
+    <repositories>
+        <repository>
+            <id>atlassian-public</id>
+            <url>https://maven.atlassian.com/repository/public</url>
+            <releases><enabled>true</enabled><checksumPolicy>warn</checksumPolicy></releases>
+            <snapshots><enabled>true</enabled><updatePolicy>never</updatePolicy><checksumPolicy>warn</checksumPolicy></snapshots>
+        </repository>
+        <repository>
+            <id>atlassian-3rdparty</id>
+            <url>https://maven.atlassian.com/3rdparty/</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>atlassian-public</id>
+            <url>https://maven.atlassian.com/repository/public</url>
+            <releases><enabled>true</enabled><checksumPolicy>warn</checksumPolicy></releases>
+            <snapshots><enabled>true</enabled><updatePolicy>never</updatePolicy><checksumPolicy>warn</checksumPolicy></snapshots>
+        </pluginRepository>
+        <pluginRepository>
+            <id>atlassian-3rdparty</id>
+            <url>https://maven.atlassian.com/3rdparty/</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>
