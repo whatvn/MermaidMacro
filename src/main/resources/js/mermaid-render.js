@@ -64,69 +64,109 @@
     // Step 5a: Escape helpers
     // ------------------------------------------------------------------
 
-    // Escape < and > but skip already-escaped &lt; &gt;
+    // Escape < > but skip already-escaped &lt; &gt;
     function escSafe(s) {
         return s.replace(/&lt;|&gt;|<|>/g, function (m) {
             return (m === '&lt;' || m === '&gt;') ? m : (m === '<' ? '&lt;' : '&gt;');
         });
     }
 
-    // Escape bare & but skip already-escaped &amp; &lt; etc.
+    // Escape bare & but skip already-escaped entities
     function escAmpSafe(s) {
         return s.replace(/&(?![a-zA-Z]{2,6};|#\d{1,6};|#x[0-9a-fA-F]{1,6};)/g, '&amp;');
     }
 
-    // Apply escFn only inside a specific delimiter pair
-    function escapeInsideDelimiters(line, open, closeRe, escFn) {
-        var result = '';
-        var i = 0;
-        while (i < line.length) {
-            var oi = line.indexOf(open, i);
-            if (oi === -1) { result += line.slice(i); break; }
-            result += line.slice(i, oi + open.length);
-            var ci = line.search(new RegExp(closeRe, ''), oi + open.length);
-            // find matching close from oi+1
-            var inner_start = oi + open.length;
-            var inner_end   = line.indexOf(open === '(' ? ')' : open === '[' ? ']' : '"', inner_start);
-            if (inner_end === -1) { result += line.slice(inner_start); i = line.length; break; }
-            result += escFn(line.slice(inner_start, inner_end));
-            result += line[inner_end];
-            i = inner_end + 1;
+    /**
+     * Find the index of the matching closing paren, accounting for nesting.
+     * e.g. for "getApp(GetAppRequest) : GetAppResponse)" starting at 0
+     *   depth tracks ( and ) — returns index of the outermost )
+     */
+    function findMatchingClose(str, openIdx) {
+        var depth = 0;
+        for (var i = openIdx; i < str.length; i++) {
+            if (str[i] === '(') depth++;
+            else if (str[i] === ')') {
+                depth--;
+                if (depth === 0) return i;
+            }
         }
+        return -1; // unbalanced
+    }
+
+    /**
+     * Extract all top-level parenthesised groups from a string, handling nesting.
+     * Returns array of {start, end, inner} where inner is the content between parens.
+     */
+    function findParenGroups(str) {
+        var groups = [];
+        var i = 0;
+        while (i < str.length) {
+            var oi = str.indexOf('(', i);
+            if (oi === -1) break;
+            var ci = findMatchingClose(str, oi);
+            if (ci === -1) break;
+            groups.push({ start: oi, end: ci, inner: str.slice(oi + 1, ci) });
+            i = ci + 1;
+        }
+        return groups;
+    }
+
+    /**
+     * Replace all top-level paren groups in a line, applying escFn to inner content.
+     * Handles nested parens correctly — escFn receives the full inner string including
+     * any nested parens.
+     */
+    function replaceParenGroups(line, escFn) {
+        var groups = findParenGroups(line);
+        if (!groups.length) return line;
+        var result = '';
+        var prev   = 0;
+        for (var i = 0; i < groups.length; i++) {
+            var g = groups[i];
+            result += line.slice(prev, g.start + 1);  // up to and including '('
+            result += escFn(g.inner);
+            result += ')';
+            prev = g.end + 1;
+        }
+        result += line.slice(prev);
         return result;
     }
 
     // ------------------------------------------------------------------
-    // Step 5b: Per-line label escaping
+    // Step 5b: Per-line label escaping (nested-paren aware)
     // ------------------------------------------------------------------
 
     function escapeAnglesInLabels(line) {
         if (/^\s*%%/.test(line)) return line;
-        // Inside (...)
-        line = line.replace(/\(([^)]*)\)/g, function (_, inner) {
+
+        // Inside (...) — handles nested parens like getApp(GetAppRequest):Resp
+        line = replaceParenGroups(line, function (inner) {
             return (inner.indexOf('<') === -1 && inner.indexOf('>') === -1)
-                ? '(' + inner + ')'
-                : '(' + escSafe(inner) + ')';
+                ? inner : escSafe(inner);
         });
-        // Inside [...]
+
+        // Inside [...] — simple, no nesting expected in bracket labels
         line = line.replace(/\[([^\]]*)\]/g, function (_, inner) {
             return (inner.indexOf('<') === -1 && inner.indexOf('>') === -1)
                 ? '[' + inner + ']'
                 : '[' + escSafe(inner) + ']';
         });
+
         // Inside "..."
         line = line.replace(/"([^"]*)"/g, function (_, inner) {
             return (inner.indexOf('<') === -1 && inner.indexOf('>') === -1)
                 ? '"' + inner + '"'
                 : '"' + escSafe(inner) + '"';
         });
+
         return line;
     }
 
     function escapeAmpInLabels(line) {
         if (/^\s*%%/.test(line)) return line;
-        line = line.replace(/\(([^)]*)\)/g, function (_, inner) {
-            return '(' + (inner.indexOf('&') !== -1 ? escAmpSafe(inner) : inner) + ')';
+
+        line = replaceParenGroups(line, function (inner) {
+            return inner.indexOf('&') !== -1 ? escAmpSafe(inner) : inner;
         });
         line = line.replace(/\[([^\]]*)\]/g, function (_, inner) {
             return '[' + (inner.indexOf('&') !== -1 ? escAmpSafe(inner) : inner) + ']';
@@ -134,7 +174,7 @@
         line = line.replace(/"([^"]*)"/g, function (_, inner) {
             return '"' + (inner.indexOf('&') !== -1 ? escAmpSafe(inner) : inner) + '"';
         });
-        // subgraph unquoted label: subgraph Data & Config
+        // subgraph unquoted label
         line = line.replace(/^(\s*subgraph\s+)([^"\n].*)$/, function (_, kw, label) {
             return kw + (label.indexOf('&') !== -1 ? escAmpSafe(label) : label);
         });
@@ -201,20 +241,39 @@
         if (type === 'flowchart' || type === 'graph') {
             return lines.map(function (line) {
                 if (/^\s*%%/.test(line)) return line;
+
                 // 1. Quote subgraph labels with parens
                 line = line.replace(
                     /^(\s*subgraph\s+)([^"\n]+\([^)\n]*\)[^\n]*)$/,
                     function (_, kw, label) { return kw + '"' + label.trim().replace(/"/g, "'") + '"'; }
                 );
-                // 2. Quote bracket node labels with parens  A[Queue (Kafka)] → A["Queue (Kafka)"]
+
+                // 2. Node definitions with nested/complex parens:
+                //    nodeId(outerLabel(innerLabel) : ReturnType)
+                //    → nodeId["outerLabel(innerLabel) : ReturnType"]
+                //    Only triggers when the paren group itself contains parens (nested).
+                line = line.replace(/^(\s*)([\w][\w-]*)\((.+)\)\s*$/, function (_, indent, id, inner) {
+                    // Only rewrite if inner content has nested parens or colons
+                    // (simple round nodes like A(label) are valid and must be left alone)
+                    if (inner.indexOf('(') !== -1 || inner.indexOf(')') !== -1 || inner.indexOf(':') !== -1) {
+                        var safe = inner.replace(/"/g, "'");
+                        return indent + id + '["' + safe + '"]';
+                    }
+                    return _;
+                });
+
+                // 3. Quote bracket node labels with parens  A[Queue (Kafka)] → A["Queue (Kafka)"]
                 line = line.replace(
                     /(\w[\w-]*)\s*\[([^\]"]*\([^\]]*\)[^\]"]*)\]/g,
                     function (_, id, label) { return id + '["' + label.replace(/"/g, "'") + '"]'; }
                 );
-                // 3. Escape < > in labels
+
+                // 4. Escape < > in labels
                 line = escapeAnglesInLabels(line);
-                // 4. Escape & in labels
+
+                // 5. Escape & in labels
                 line = escapeAmpInLabels(line);
+
                 return line;
             }).join('\n');
         }

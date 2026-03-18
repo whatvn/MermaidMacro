@@ -8,7 +8,7 @@
 
     <groupId>com.zalopay.confluence</groupId>
     <artifactId>mermaid-diagrams-plugin</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <packaging>atlassian-plugin</packaging>
 
     <name>Mermaid Diagrams for Confluence</name>
