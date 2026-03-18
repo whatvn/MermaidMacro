@@ -1,7 +1,8 @@
 # Mermaid Diagrams Plugin for Confluence Data Center
+![demo](./images/img.png)
 
 A P2 (server-side) Confluence plugin that adds a **Mermaid macro**, enabling authors to write diagram source text directly in Confluence pages and have it rendered as a crisp SVG — exactly like PlantUML, but powered by [mermaid.js](https://mermaid.js.org).
-
+Additional, this plugin auto detect mermaid diagram within a page, without the need of using macro directly, it means if you insert mermaid in `code` block, using preformatted text or even paste diagram to the page, it will also get rendered automatically. 
 ---
 
 ## Prerequisites
